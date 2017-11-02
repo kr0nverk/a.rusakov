@@ -11,11 +11,11 @@ SET client_min_messages = warning;
 CREATE TABLE movies (
     id integer NOT NULL,
 	name varchar(50) NOT NULL,
-	genre_id integer,
-	country_id integer,
+	genre_id integer NOT NULL,
+	country_id integer NOT NULL,
 	date timestamp without time zone,
-    directors_id integer,
-	rating_id integer,
+    directors_id integer NOT NULL,
+	rating_id integer NOT NULL,
 	box_office float
 );
 
@@ -29,9 +29,10 @@ CREATE SEQUENCE movies_id_seq
 ALTER SEQUENCE movies_id_seq OWNED BY movies.id;
 
 
+
 CREATE TABLE genre (
 	id integer NOT NULL,
-	name varchar(20)
+	name varchar(20) NOT NULL
 );
 
 CREATE SEQUENCE genre_id_seq
@@ -59,10 +60,10 @@ ALTER TABLE ONLY movies
 
 CREATE TABLE directors (
     id integer NOT NULL,
-	name varchar(50),
+	name varchar(50) NOT NULL,
 	born timestamp without time zone,
 	death timestamp without time zone,
-	country_id integer,
+	country_id integer NOT NULL,
 	information text
 );
 
@@ -87,7 +88,7 @@ ALTER TABLE ONLY movies
 
 CREATE TABLE rating (
     id integer NOT NULL,
-	IMDb float
+	IMDb float CONSTRAINT positive_IMDb CHECK (IMDb >= 0)
 );
 
 CREATE SEQUENCE rating_id_seq
@@ -109,12 +110,12 @@ ALTER TABLE ONLY movies
 
 CREATE TABLE actors (
     id integer NOT NULL,
-	name varchar(50),
+	name varchar(50) NOT NULL,
 	born timestamp without time zone,
 	death timestamp without time zone,
-	country_id integer,
-	height float,
-	complexion varchar(15),
+	country_id integer NOT NULL,
+	height float NOT NULL,
+	complexion varchar(15) NOT NULL,
 	information text
 );
 
@@ -161,7 +162,7 @@ ALTER TABLE ONLY movies_actors_relations
 
 CREATE TABLE country (
     id integer NOT NULL,
-	name varchar(20)
+	name varchar(20) NOT NULL
 );
 
 CREATE SEQUENCE country_id_seq
@@ -344,3 +345,27 @@ INSERT INTO movies_actors_relations VALUES ('15', '7','9');
 
 
 SELECT pg_catalog.setval('movies_actors_relations_id_seq', 15, true);
+
+
+
+
+ALTER TABLE ONLY movies
+	ALTER id SET DEFAULT nextval('movies_id_seq');
+
+ALTER TABLE ONLY genre
+	ALTER id SET DEFAULT nextval('genre_id_seq');
+
+ALTER TABLE ONLY directors
+	ALTER id SET DEFAULT nextval('directors_id_seq');
+
+ALTER TABLE ONLY rating
+	ALTER id SET DEFAULT nextval('rating_id_seq');
+
+ALTER TABLE ONLY actors
+	ALTER id SET DEFAULT nextval('actors_id_seq');
+
+ALTER TABLE ONLY movies_actors_relations
+	ALTER id SET DEFAULT nextval('movies_actors_relations_id_seq');
+
+ALTER TABLE ONLY country
+	ALTER id SET DEFAULT nextval('country_id_seq');
