@@ -47,3 +47,34 @@ SELECT m.name, m.box_office
 	ORDER BY
 		char_length(m.name) DESC NULLS LAST
 	LIMIT 10;
+
+
+--5 запрос
+--¬ыбрать фильм, режисера и страну, страна которой задана.
+
+SELECT movies.name AS movie, directors.name AS directors, country.name AS country
+    FROM movies INNER JOIN country
+		ON (movies.country_id = country.id) AND (country.name = 'New Zealand')
+	INNER JOIN directors
+		ON (movies.directors_id = directors.id);
+
+--8 запрос
+--¬ыбрать фильм, жанр, дату релиза и им€ режисера, жанр которого задан и дата релиза больше заданной.
+
+SELECT movies.name AS movie, genre.name AS genre, movies.release_date AS release_date, directors.name AS directors
+    FROM movies INNER JOIN genre
+		ON (movies.genre_id = genre.id) AND (genre.name = 'Thriller')
+	INNER JOIN directors
+		ON (movies.directors_id = directors.id)
+	WHERE movies.release_date >= '1994-01-01';
+
+--7 запрос
+--¬ыбрать фильм, режиссЄра, возраст режиссера когда он выпустил фильм, страну. —ортировать по возрасту.
+  
+SELECT movies.name AS movie, directors.name AS directors, (movies.release_date - directors.born_date)/365 AS age, country.name AS country
+    FROM movies INNER JOIN directors
+		ON (movies.directors_id = directors.id)
+	INNER JOIN country
+		ON (movies.country_id = country.id) AND (country.name = 'New Zealand')
+	ORDER BY
+		(movies.release_date - directors.born_date)/365 DESC NULLS LAST;

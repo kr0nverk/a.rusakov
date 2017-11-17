@@ -221,7 +221,7 @@ INSERT INTO genre VALUES ('9', 'Gangster film');
 SELECT pg_catalog.setval('genre_id_seq', 9, true);
 
 
-INSERT INTO directors VALUES ('1', 'Frank Darabont',                   '1981-01-01', 'infinity', '1', 'text');
+INSERT INTO directors VALUES ('1', 'Frank Darabont',                   '1959-01-01', 'infinity', '1', 'text');
 INSERT INTO directors VALUES ('2', 'Francis Ford Coppola',             '1939-01-01', 'infinity', '1', 'text');
 INSERT INTO directors VALUES ('3', 'Christopher Jonathan James Nolan', '1970-01-01', 'infinity', '6', 'text');
 INSERT INTO directors VALUES ('4', 'Sidney Lumet',                     '1924-01-01', 'infinity', '1', 'text');
@@ -229,7 +229,7 @@ INSERT INTO directors VALUES ('5', 'Steven Allan Spielberg',           '1946-01-
 INSERT INTO directors VALUES ('6', 'Quentin Jerome Tarantino',         '1963-01-01', 'infinity', '1', 'text');
 INSERT INTO directors VALUES ('7', 'Sir Peter Robert Jackson',         '1961-01-01', 'infinity', '2', 'text');
 INSERT INTO directors VALUES ('8', 'Sergio Leone',                     '1929-01-01', '1989-01-01', '3', 'text');
-INSERT INTO directors VALUES ('9', 'David Andrew Leo Fincher',         '1984-01-01', 'infinity', '1', 'text');
+INSERT INTO directors VALUES ('9', 'David Andrew Leo Fincher',         '1962-01-01', 'infinity', '1', 'text');
 INSERT INTO directors VALUES ('10', 'Robert Lee Zemeckis',             '1952-01-01', 'infinity', '1', 'text');
 INSERT INTO directors VALUES ('11', 'Irvin Kershner',                  '1923-01-01', '2010-01-01', '1', 'text');
 INSERT INTO directors VALUES ('12', 'Jan Tomas Forman',                '1932-01-01', 'infinity', '1', 'text');
