@@ -262,28 +262,54 @@ SELECT movies.name AS movie, genre.name AS genre, movies.release_date AS release
 --%%  ¬ыбрать фильм, режиссЄра, возраст режиссера когда он выпустил фильм, страну. —ортировать по возрасту.
 --%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SELECT movies.name AS movie, directors.name AS directors, (movies.release_date - directors.born_date)/365 AS age, country.name AS country
+SELECT movies.name AS movie, directors.name AS directors, age(movies.release_date, directors.born_date) AS age, country.name AS country
     FROM movies INNER JOIN directors
 		ON (movies.directors_id = directors.id)
 	INNER JOIN country
 		ON (movies.country_id = country.id) AND (country.name = 'New Zealand')
 	ORDER BY
-		(movies.release_date - directors.born_date)/365 DESC NULLS LAST;
+		age(movies.release_date, directors.born_date) DESC NULLS LAST;
 
 
 --%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 --%%  8 запрос
---%%  
+--%%  ¬ывести все страны, количество фильмов сн€тых в них и эти фильмы, через зап€тую, сортировать по имени страны.
 --%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+SELECT cou.name AS country, count(mov.name) AS count_movies, string_agg(mov.name, ', ' ORDER BY mov.name) AS movies
+	FROM (SELECT id, name
+			FROM country) AS cou
+		INNER JOIN
+		(SELECT name, country_id
+			FROM movies) AS mov
+		ON mov.country_id = cou.id
+GROUP BY cou.name;
 
 --%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 --%%  9 запрос
---%%  
+--%%  ¬ывести всех режисеров и фильмы которые они сн€ли, с суммой прибыли этих фильмов, сортировать по имени режисЄра.
 --%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+SELECT dir.name AS directors, string_agg(mov.name, ', ' ORDER BY mov.name) AS movies, sum(mov.box_office) AS sum_box_office
+	FROM (SELECT id, name
+			FROM directors) AS dir
+		INNER JOIN
+		(SELECT name, directors_id, box_office
+			FROM movies) AS mov ON mov.directors_id = dir.id
+GROUP BY dir.name;
 
 --%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 --%%  10 запрос
---%%  
+--%%  ¬ывести все фильмы и актеров снимающихс€ в них перечислив через зап€тую, сортировать по имени фильма.
 --%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+SELECT mov.name AS movies, string_agg(act.name, ', ' ORDER BY act.name) AS actors
+	FROM (SELECT movies_id, actors_id
+			FROM movies_actors_relations) AS movact
+		INNER JOIN
+		(SELECT id, name
+			FROM movies) AS mov ON movact.movies_id = mov.id
+		INNER JOIN
+		(SELECT id, name
+			FROM actors) AS act ON movact.actors_id = act.id
+ GROUP BY mov.name;
