@@ -243,6 +243,56 @@ SELECT movies.name AS movie, directors.name AS directors, country.name AS countr
 	INNER JOIN directors
 		ON (movies.directors_id = directors.id);
 
+--Оптимизация
+--==================================================================================================
+
+CREATE INDEX ON country(name);
+EXPLAIN (ANALYZE) SELECT movies.name AS movie, directors.name AS directors, country.name AS country
+    FROM movies INNER JOIN country
+		ON (movies.country_id = country.id) AND (country.name = 'New Zealand')
+	INNER JOIN directors
+		ON (movies.directors_id = directors.id);
+
+	                                                   QUERY PLAN
+ Hash Join  (cost=2.50..3.81 rows=4 width=294) (actual time=0.081..0.083 rows=3 loops=1)
+   Hash Cond: (directors.id = movies.directors_id)
+   ->  Seq Scan on directors  (cost=0.00..1.20 rows=20 width=122) (actual time=0.018..0.019 rows=20 loops=1)
+   ->  Hash  (cost=2.45..2.45 rows=4 width=180) (actual time=0.037..0.037 rows=3 loops=1)
+         Buckets: 1024  Batches: 1  Memory Usage: 9kB
+         ->  Hash Join  (cost=1.10..2.45 rows=4 width=180) (actual time=0.030..0.034 rows=3 loops=1)
+               Hash Cond: (movies.country_id = country.id)
+               ->  Seq Scan on movies  (cost=0.00..1.25 rows=25 width=126) (actual time=0.007..0.008 rows=25 loops=1)
+               ->  Hash  (cost=1.09..1.09 rows=1 width=62) (actual time=0.015..0.015 rows=1 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                     ->  Seq Scan on country  (cost=0.00..1.09 rows=1 width=62) (actual time=0.011..0.011 rows=1 loops=1)
+                           Filter: ((name)::text = 'New Zealand'::text)
+                           Rows Removed by Filter: 6
+ Planning time: 153.591 ms
+ Execution time: 0.143 ms
+
+--==================================================================================================
+
+SET enable_seqscan TO off;
+EXPLAIN (ANALYZE) SELECT movies.name AS movie, directors.name AS directors, country.name AS country
+    FROM movies INNER JOIN country
+		ON (movies.country_id = country.id) AND (country.name = 'New Zealand')
+	INNER JOIN directors
+		ON (movies.directors_id = directors.id);
+
+	                                                   QUERY PLAN
+ Nested Loop  (cost=10000000000.27..10000000012.36 rows=4 width=294) (actual time=0.081..0.089 rows=3 loops=1)
+   ->  Nested Loop  (cost=10000000000.13..10000000009.78 rows=4 width=180) (actual time=0.075..0.080 rows=3 loops=1)
+         Join Filter: (movies.country_id = country.id)
+         Rows Removed by Join Filter: 22
+         ->  Seq Scan on movies  (cost=10000000000.00..10000000001.25 rows=25 width=126) (actual time=0.013..0.013 rows=25 loops=1)
+         ->  Materialize  (cost=0.13..8.16 rows=1 width=62) (actual time=0.002..0.002 rows=1 loops=25)
+               ->  Index Scan using country_name_idx on country  (cost=0.13..8.15 rows=1 width=62) (actual time=0.052..0.053 rows=1 loops=1)
+                     Index Cond: ((name)::text = 'New Zealand'::text)
+   ->  Index Scan using directors_pkey on directors  (cost=0.14..0.64 rows=1 width=122) (actual time=0.002..0.002 rows=1 loops=3)
+         Index Cond: (id = movies.directors_id)
+ Planning time: 0.238 ms
+ Execution time: 0.134 ms
+
 
 --%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 --%%  6 запрос
@@ -255,6 +305,61 @@ SELECT movies.name AS movie, genre.name AS genre, movies.release_date AS release
 	INNER JOIN directors
 		ON (movies.directors_id = directors.id)
 	WHERE movies.release_date >= '1994-01-01';
+
+--Оптимизация
+--==================================================================================================
+
+CREATE INDEX ON movies(release_date);
+CREATE INDEX ON genre(name);
+EXPLAIN (ANALYZE) SELECT movies.name AS movie, genre.name AS genre, movies.release_date AS release_date, directors.name AS directors
+    FROM movies INNER JOIN genre
+		ON (movies.genre_id = genre.id) AND (genre.name = 'Thriller')
+	INNER JOIN directors
+		ON (movies.directors_id = directors.id)
+	WHERE movies.release_date >= '1994-01-01';
+
+	                                                   QUERY PLAN
+ Hash Join  (cost=2.49..3.78 rows=1 width=298) (actual time=0.038..0.040 rows=2 loops=1)
+   Hash Cond: (directors.id = movies.directors_id)
+   ->  Seq Scan on directors  (cost=0.00..1.20 rows=20 width=122) (actual time=0.007..0.008 rows=20 loops=1)
+   ->  Hash  (cost=2.48..2.48 rows=1 width=184) (actual time=0.025..0.025 rows=2 loops=1)
+         Buckets: 1024  Batches: 1  Memory Usage: 9kB
+         ->  Hash Join  (cost=1.13..2.48 rows=1 width=184) (actual time=0.020..0.023 rows=2 loops=1)
+               Hash Cond: (movies.genre_id = genre.id)
+               ->  Seq Scan on movies  (cost=0.00..1.31 rows=8 width=130) (actual time=0.006..0.009 rows=13 loops=1)
+                     Filter: (release_date >= '1994-01-01'::date)
+                     Rows Removed by Filter: 12
+               ->  Hash  (cost=1.11..1.11 rows=1 width=62) (actual time=0.008..0.008 rows=1 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                     ->  Seq Scan on genre  (cost=0.00..1.11 rows=1 width=62) (actual time=0.005..0.006 rows=1 loops=1)
+                           Filter: ((name)::text = 'Thriller'::text)
+                           Rows Removed by Filter: 8
+ Planning time: 0.464 ms
+ Execution time: 0.083 ms
+
+--==================================================================================================
+
+SET enable_seqscan TO off;
+EXPLAIN (ANALYZE) SELECT movies.name AS movie, genre.name AS genre, movies.release_date AS release_date, directors.name AS directors
+    FROM movies INNER JOIN genre
+		ON (movies.genre_id = genre.id) AND (genre.name = 'Thriller')
+	INNER JOIN directors
+		ON (movies.directors_id = directors.id)
+	WHERE movies.release_date >= '1994-01-01';
+
+	                                                   QUERY PLAN
+ Nested Loop  (cost=0.41..18.20 rows=1 width=298) (actual time=0.077..0.081 rows=2 loops=1)
+   ->  Nested Loop  (cost=0.27..16.53 rows=1 width=184) (actual time=0.073..0.076 rows=2 loops=1)
+         Join Filter: (movies.genre_id = genre.id)
+         Rows Removed by Join Filter: 11
+         ->  Index Scan using genre_name_idx on genre  (cost=0.14..8.15 rows=1 width=62) (actual time=0.043..0.043 rows=1 loops=1)
+               Index Cond: ((name)::text = 'Thriller'::text)
+         ->  Index Scan using movies_release_date_idx on movies  (cost=0.14..8.28 rows=8 width=130) (actual time=0.024..0.027 rows=13 loops=1)
+               Index Cond: (release_date >= '1994-01-01'::date)
+   ->  Index Scan using directors_pkey on directors  (cost=0.14..1.66 rows=1 width=122) (actual time=0.002..0.002 rows=1 loops=2)
+         Index Cond: (id = movies.directors_id)
+ Planning time: 0.210 ms
+ Execution time: 0.121 ms
 
 
 --%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -269,6 +374,66 @@ SELECT movies.name AS movie, directors.name AS directors, age(movies.release_dat
 		ON (movies.country_id = country.id) AND (country.name = 'New Zealand')
 	ORDER BY
 		age(movies.release_date, directors.born_date) DESC NULLS LAST;
+
+--Оптимизация
+--==================================================================================================
+
+CREATE INDEX ON country(name);
+EXPLAIN (ANALYZE) SELECT movies.name AS movie, directors.name AS directors, age(movies.release_date, directors.born_date) AS age, country.name AS country
+    FROM movies INNER JOIN directors
+		ON (movies.directors_id = directors.id)
+	INNER JOIN country
+		ON (movies.country_id = country.id) AND (country.name = 'New Zealand')
+	ORDER BY
+		age(movies.release_date, directors.born_date) DESC NULLS LAST;
+
+	                                                   QUERY PLAN
+ Sort  (cost=3.88..3.89 rows=4 width=310) (actual time=19.489..19.489 rows=3 loops=1)
+   Sort Key: (age((movies.release_date)::timestamp with time zone, (directors.born_date)::timestamp with time zone)) DESC NULLS LAST
+   Sort Method: quicksort  Memory: 25kB
+   ->  Hash Join  (cost=2.50..3.84 rows=4 width=310) (actual time=19.457..19.463 rows=3 loops=1)
+         Hash Cond: (directors.id = movies.directors_id)
+         ->  Seq Scan on directors  (cost=0.00..1.20 rows=20 width=126) (actual time=0.008..0.010 rows=20 loops=1)
+         ->  Hash  (cost=2.45..2.45 rows=4 width=184) (actual time=0.033..0.033 rows=3 loops=1)
+               Buckets: 1024  Batches: 1  Memory Usage: 9kB
+               ->  Hash Join  (cost=1.10..2.45 rows=4 width=184) (actual time=0.023..0.027 rows=3 loops=1)
+                     Hash Cond: (movies.country_id = country.id)
+                     ->  Seq Scan on movies  (cost=0.00..1.25 rows=25 width=130) (actual time=0.003..0.005 rows=25 loops=1)
+                     ->  Hash  (cost=1.09..1.09 rows=1 width=62) (actual time=0.014..0.014 rows=1 loops=1)
+                           Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                           ->  Seq Scan on country  (cost=0.00..1.09 rows=1 width=62) (actual time=0.007..0.008 rows=1 loops=1)
+                                 Filter: ((name)::text = 'New Zealand'::text)
+                                 Rows Removed by Filter: 6
+ Planning time: 0.455 ms
+ Execution time: 19.544 ms
+
+--==================================================================================================
+
+SET enable_seqscan TO off;
+EXPLAIN (ANALYZE) SELECT movies.name AS movie, directors.name AS directors, age(movies.release_date, directors.born_date) AS age, country.name AS country
+    FROM movies INNER JOIN directors
+		ON (movies.directors_id = directors.id)
+	INNER JOIN country
+		ON (movies.country_id = country.id) AND (country.name = 'New Zealand')
+	ORDER BY
+		age(movies.release_date, directors.born_date) DESC NULLS LAST;
+
+	                                                   QUERY PLAN
+ Sort  (cost=10000000012.43..10000000012.44 rows=4 width=310) (actual time=0.089..0.090 rows=3 loops=1)
+   Sort Key: (age((movies.release_date)::timestamp with time zone, (directors.born_date)::timestamp with time zone)) DESC NULLS LAST
+   Sort Method: quicksort  Memory: 25kB
+   ->  Nested Loop  (cost=10000000000.27..10000000012.39 rows=4 width=310) (actual time=0.072..0.083 rows=3 loops=1)
+         ->  Nested Loop  (cost=10000000000.13..10000000009.78 rows=4 width=184) (actual time=0.061..0.066 rows=3 loops=1)
+               Join Filter: (movies.country_id = country.id)
+               Rows Removed by Join Filter: 22
+               ->  Seq Scan on movies  (cost=10000000000.00..10000000001.25 rows=25 width=130) (actual time=0.011..0.013 rows=25 loops=1)
+               ->  Materialize  (cost=0.13..8.16 rows=1 width=62) (actual time=0.002..0.002 rows=1 loops=25)
+                     ->  Index Scan using country_name_idx1 on country  (cost=0.13..8.15 rows=1 width=62) (actual time=0.041..0.041 rows=1 loops=1)
+                           Index Cond: ((name)::text = 'New Zealand'::text)
+         ->  Index Scan using directors_pkey on directors  (cost=0.14..0.64 rows=1 width=126) (actual time=0.002..0.002 rows=1 loops=3)
+               Index Cond: (id = movies.directors_id)
+ Planning time: 0.222 ms
+ Execution time: 0.126 ms
 
 
 --%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
